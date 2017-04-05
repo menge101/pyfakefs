@@ -138,9 +138,8 @@ class TestPyfakefsUnittest(TestPyfakefsUnittestBase):  # pylint: disable=R0904
         else:
             self.assertTrue(self.fs.Exists('/fake_file.txt'))
 
+
 import math as path
-
-
 class TestPatchPathUnittestFailing(TestPyfakefsUnittestBase):
     """Tests the default behavior regarding the argument patch_path:
        An own path module (in this case an alias to math) cannot be imported,
@@ -148,7 +147,8 @@ class TestPatchPathUnittestFailing(TestPyfakefsUnittestBase):
     """
 
     def __init__(self, methodName='runTest'):
-        super(TestPatchPathUnittestFailing, self).__init__(methodName, patch_path=True)
+        super(TestPatchPathUnittestFailing, self).__init__(methodName,
+                                                           patch_path=True)
 
     @unittest.expectedFailure
     def test_own_path_module(self):
@@ -161,11 +161,34 @@ class TestPatchPathUnittestPassing(TestPyfakefsUnittestBase):
     """
 
     def __init__(self, methodName='runTest'):
-        super(TestPatchPathUnittestPassing, self).__init__(methodName, patch_path=False)
+        super(TestPatchPathUnittestPassing, self).__init__(methodName,
+                                                           patch_path=False)
 
     def test_own_path_module(self):
         self.assertEqual(2, path.floor(2.5))
 
+sys.path.append(os.path.join(os.path.dirname(__file__), 'fixtures'))
+import module_with_attributes
+
+class TestAttributesWithFakeModuleNames(TestPyfakefsUnittestBase):
+    """Test that module attributes with names like `path` or `io` are not
+    stubbed out.
+    """
+    def testAttributes(self):
+        """Attributes of module under test are not patched"""
+        global path
+        # Move aside the math module imported as path for the sake pf tests
+        # TestPatchPathUnittestFailing and TestPatchPathUnittestPassing
+        path_module = path
+
+        self.assertEqual(module_with_attributes.os, 'os attribute value')
+        self.assertEqual(module_with_attributes.path, 'path attribute value')
+        self.assertEqual(module_with_attributes.pathlib, 'pathlib attribute value')
+        self.assertEqual(module_with_attributes.shutil, 'shutil attribute value')
+        self.assertEqual(module_with_attributes.tempfile, 'tempfile attribute value')
+        self.assertEqual(module_with_attributes.io, 'io attribute value')
+
+        path = path_module
 
 @unittest.skipIf(sys.version_info < (2, 7), "No byte strings in Python 2.6")
 class TestCopyRealFile(TestPyfakefsUnittestBase):
